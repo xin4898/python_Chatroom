@@ -37,7 +37,7 @@ def home():
         room = code 
         if create != False:
             room = generate_unique_code(4)
-            rooms[room] = {"members":0, "message":[]}
+            rooms[room] = {"members":0, "messages":[]}
         elif code not in rooms:
             return render_template("home.html", error="該房間不存在",code=code,name=name)
 
@@ -53,12 +53,26 @@ def room():
     if room is None or session.get("name") is None or room not in rooms:
         return redirect(url_for("home"))
     
-    return render_template("room.html")
+    return render_template("room.html",code=room,messages=rooms[room]["messages"])
+
+@socketio.on("message")
+def message(data):
+    room=session.get("room")
+    if room not in rooms:
+        return
+    
+    content = {
+        "name":session.get("name"),
+        "message":data["data"]
+    }
+    send(content,to=room)
+    rooms[room]["messages"].append(content)
+    print(f"{session.get('name')}) 說:{data['data']}")
 
 @socketio.on("connect")
 def connect(auth):
-    room = request.get("room")
-    name = request.get("name")
+    room = session.get("room")
+    name = session.get("name")
 
     if not room or not name:
         return
@@ -67,7 +81,7 @@ def connect(auth):
         return
     
     join_room(room)
-    send({"name":name,"message":"已加入聊天室"},to=room)
+    send({"name":name,"message":"已加入聊天室"}, to=room)
     rooms[room]["members"]+=1
     print(f"{name} 加入聊天室{room}")
 
@@ -82,7 +96,7 @@ def disconnect():
         if rooms[room]["members"]<=0:
             del rooms[room]
 
-    send({"name":name,"message":"已離開聊天室"},to=room)
+    send({"name":name,"message":"已離開聊天室"}, to=room)
     print(f"{name} 離開聊天室{room}") 
 
 

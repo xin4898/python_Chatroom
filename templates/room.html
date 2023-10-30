@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="message-box">
-<h2>聊天室: {{room}}</h2>
+<h2>聊天室: {{code}}</h2>
 <div class="messages" id="messages"></div>
 <div class="inputs">
     <input 
@@ -20,23 +20,36 @@
 <script type="text/javascript">
 var socketio = io();
 
-const messages = document.getElementById("messages")
+const messages = document.getElementById("messages");
 
 const createMessage = (name, msg) => {
     const content = `
-    <div>
+    <div class="text">
         <span>
             <strong>${name}</strong>:${msg}
         </span>
+        <span class="muted">
+            ${new Date().toLocaleString()}
+        </span>
     </div>
-    <span class="muted">
-        ${new Date().toLocaleString()} 
-    </span>
-    `
-}
+    `;
+    messages.innerHTML+=content;
+};
 
-const sendMessage = ()=>{
-    console.log("傳送");
+socketio.on("message", (data) => {
+    createMessage(data.name,data.message);
+});
+
+const sendMessage = () => {
+    const messages = document.getElementById("messages")
+    if(message.value=="") return;
+    socketio.emit("message",{data:message.value});
+    message.value="";
 };
 </script>
+{% for msg in messages %}
+    <script type="text/javascript">
+        createMessage("{{msg.name}}","{{msg.message}}");
+    </script>
+{% endfor %}
 {% endblock %}
