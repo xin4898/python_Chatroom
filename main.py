@@ -1,0 +1,90 @@
+from flask import Flask, render_template, request, session, redirect, url_for
+from flask_socketio import join_room, leave_room, send, SocketIO
+import random
+from string import ascii_uppercase
+
+app = Flask(__name__)
+app.config["SECRET_KEY"] = "djfuirkshfdj"
+socketio = SocketIO(app)
+
+
+rooms = {}
+def generate_unique_code(length):
+    while True:
+        code = ""
+        for _ in range(length):
+            code += random.choice(ascii_uppercase)
+
+        if code not in rooms:
+            break
+
+    return code
+@app.route("/", methods=["POST", "GET"])
+def home():
+    session.clear()
+    if request.method == "POST":
+        name = request.form.get("name")
+        code = request.form.get("code")
+        join = request.form.get("join",False)
+        create = request.form.get("create",False)
+
+        if not name:
+            return render_template("home.html",error="請輸入使用者名稱",code=code,name=name)
+        
+        if join != False and not code:
+            return render_template("home.html", error="請輸入房間號碼",code=code,name=name)
+        
+        room = code 
+        if create != False:
+            room = generate_unique_code(4)
+            rooms[room] = {"members":0, "message":[]}
+        elif code not in rooms:
+            return render_template("home.html", error="該房間不存在",code=code,name=name)
+
+        session["room"] = room
+        session["name"] = name
+        return redirect(url_for("room"))
+
+    return render_template("home.html")
+
+@app.route("/room")
+def room():
+    room = session.get("room")
+    if room is None or session.get("name") is None or room not in rooms:
+        return redirect(url_for("home"))
+    
+    return render_template("room.html")
+
+@socketio.on("connect")
+def connect(auth):
+    room = request.get("room")
+    name = request.get("name")
+
+    if not room or not name:
+        return
+    if room not in rooms:
+        leave_room(room)
+        return
+    
+    join_room(room)
+    send({"name":name,"message":"已加入聊天室"},to=room)
+    rooms[room]["members"]+=1
+    print(f"{name} 加入聊天室{room}")
+
+@socketio.on("disconnect")
+def disconnect():
+    room = session.get("room")
+    name = session.get("name")
+    leave_room(room)
+
+    if room in rooms:
+        rooms[room]["members"]-=1
+        if rooms[room]["members"]<=0:
+            del rooms[room]
+
+    send({"name":name,"message":"已離開聊天室"},to=room)
+    print(f"{name} 離開聊天室{room}") 
+
+
+if __name__ == "__main__":
+    socketio.run(app, debug=True)

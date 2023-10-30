@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<form method="post" class="buttons">
+<h3>進入聊天室</h3>
+<div>
+    <label>名稱:</label>
+    <input type="text" placeholder="請輸入你的名稱!" name="name" value="{{name}}">
+</div>
+<div class="join">
+    <input type="text" placeholder="請輸入房間號碼" name="code" value="{{code}}" />
+    <button type="submit" name="join">加入房間</button>
+</div>
+<button type="submit" name="create" class="create-btn">創建房間</button>
+{% if error %}
+<ul>
+    <li>{{error}}</li>
+</ul>
+{% endif %}
+</form>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="message-box">
+<h2>聊天室: {{room}}</h2>
+<div class="messages" id="messages"></div>
+<div class="inputs">
+    <input 
+    type="text"
+    rows="3"
+    placeholder="訊息"
+    name="message"
+    id="message"
+    />
+    <button type="button" name="send" id="send-btn" onclick="sendMessage()">
+    傳送
+    </button>
+</div>
+</div>
+
+<script type="text/javascript">
+var socketio = io();
+
+const messages = document.getElementById("messages")
+
+const createMessage = (name, msg) => {
+    const content = `
+    <div>
+        <span>
+            <strong>${name}</strong>:${msg}
+        </span>
+    </div>
+    <span class="muted">
+        ${new Date().toLocaleString()} 
+    </span>
+    `
+}
+
+const sendMessage = ()=>{
+    console.log("傳送");
+};
+</script>
+{% endblock %}
